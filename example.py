@@ -4,7 +4,7 @@ Example usage
 
 import torch
 
-from chamferdist import ChamferDistance
+from localchamferdist import ChamferDistance
 
 
 # Create two random pointclouds
