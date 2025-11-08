@@ -9,6 +9,7 @@ A simple example Pytorch module to compute Chamfer distance between two pointclo
 ### Installation
 
 You can install the package using `pip`.
+> **NOTE**: This is not working for some reason. See 'Building from source'.
 
 ```
 pip install chamferdist
@@ -20,8 +21,23 @@ In your favourite python/conda virtual environment, execute the following comman
 
 > **NOTE**: This assumes you have PyTorch installed already (preferably, >= 1.5.0; untested for earlier releases).
 
+> Currently tested with CUDA 11.8 (with CONDA).
+Steps for environment creation:
+```
+mv localchamferdist/ chamferdist/
+conda create -n chamfer python=3.10
+conda activate chamfer
+conda install -c nvidia -c conda-forge cudatoolkit=11.8.0 cudatoolkit-dev
+pip install torch==2.7.1 torchvision==0.22.1 torchaudio==2.7.1 --index-url https://download.pytorch.org/whl/cu118
+conda install 'gxx=[version=">=6.0.0, <12.0"]' -c conda-forge
+```
+Then, install `chamferdist`:
 ```python
 python setup.py install
+```
+And finally:
+```
+mv chamferdist/ localchamferdist/
 ```
 
 ### Running (example)
