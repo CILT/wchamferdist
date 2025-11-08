@@ -9,6 +9,30 @@ from torch.autograd import Function
 from localchamferdist.chamfer import knn_points
 
 
+def gather_weights_from_indices(source_weights: torch.Tensor, indices: torch.Tensor):
+    """
+    Given source weights and nearest-neighbor indices,
+    returns the corresponding weights for each matched point.
+
+    Args:
+        source_weights: [B, |S|] tensor of per-source weights
+        indices: [B, |T|, 1] long tensor of nearest-neighbor indices into source cloud
+
+    Returns:
+        target_weights: [B, |T|] tensor of weights transferred from nearest source points
+    """
+    # Ensure correct shape
+    if source_weights.dim() == 1:
+        source_weights = source_weights.unsqueeze(0)  # [1, |S|]
+    if indices.dim() == 2:
+        indices = indices.unsqueeze(-1)  # [B, |T|, 1]
+
+    # Gather weights according to indices
+    # nn_idx entries correspond to source indices
+    target_weights = torch.gather(source_weights, 1, indices[..., 0])
+    return target_weights
+
+
 class WeightedChamferDistance(torch.nn.Module):
     def __init__(self):
         super().__init__()
@@ -62,6 +86,12 @@ class WeightedChamferDistance(torch.nn.Module):
             lengths2=lengths_target,
             K=1
         )
+        # print("\nSource NN indices:")
+        # for nn in source_nn.idx[..., 0]:
+        #     print(nn)
+        # print("Source NN dists:")
+        # for nn in source_nn.dists[..., 0]:
+        #     print(nn)
 
         target_nn = None
         if reverse or bidirectional:
@@ -72,6 +102,14 @@ class WeightedChamferDistance(torch.nn.Module):
                 lengths2=lengths_source,
                 K=1
             )
+
+        # print("\nTarget NN indices:")
+        # for nn in target_nn.idx[..., 0]:
+        #     print(nn)
+        # print("Target NN dists:")
+        # for nn in target_nn.dists[..., 0]:
+        #     print(nn)
+
 
         chamfer_forward = source_nn.dists[..., 0]
         chamfer_backward = None
@@ -84,7 +122,7 @@ class WeightedChamferDistance(torch.nn.Module):
         if reverse or bidirectional:
             chamfer_backward = target_nn.dists[..., 0]
             if weights_source is not None:
-                chamfer_backward = chamfer_backward * weights_source
+                chamfer_backward = chamfer_backward * gather_weights_from_indices(weights_source, target_nn.idx[..., 0])
 
         # Reduce
         if reverse or bidirectional:

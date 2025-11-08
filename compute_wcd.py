@@ -28,19 +28,21 @@ def load_mesh_and_weights(mesh_path, json_path=None, device="cpu"):
     weights = torch.tensor([
         category_to_weight.get(vertex_categories.get(str(i), "default"), 1.0)
         for i in range(verts.shape[1])
-    ], dtype=torch.float32, device=device)[None, :]  # Shape (1, N)
+    ], dtype=torch.float32, device=device)[None, :]  # Shape (1, P)
 
     return verts, weights
 
 
 if __name__ == "__main__":
 
-    root = "/home/cllull/Desktop/blender-4.4.3-linux-x64_anakena"
+    # root = "/home/cllullt/Desktop/blender-4.4.3-linux-x64_anakena"
+    root = "/home/cllullt/blender-4.4.3-linux-x64"
     source_path = f"{root}/cube.ply"
+    # source_path = f"/media/cllullt/Arxius/Meus_Documents/PhD/Investigacion/data/primitives/cube_2.obj"
     categories_path = f"{root}/cube.ply.json"
     target_path = f"/media/cllull/Arxius/Meus_Documents/PhD/Investigacion/data/primitives/cube.obj"
     target_path = f"/media/cllull/Arxius/Meus_Documents/PhD/Investigacion/data/primitives/cube_flat.ply"
-    target_path = f"/media/cllull/Arxius/Meus_Documents/PhD/Investigacion/data/primitives/cube_2.obj"
+    target_path = f"/media/cllullt/Arxius/Meus_Documents/PhD/Investigacion/data/primitives/cube_simple.obj"
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     
@@ -52,25 +54,28 @@ if __name__ == "__main__":
     print(f"Loaded target vertices shape: {target_verts.shape}")
 
     wcd = WeightedChamferDistance()
+    print("Computing weighted Chamfer distance...")
     dist = 0.5 * wcd(
         source_verts,
         target_verts,
-        # weights_source=weights,
+        weights_source=weights,
         reverse=False,
-        bidirectional=True
+        bidirectional=True,
+        point_reduction="mean"
     )
-
     print("Weighted Chamfer distance:", dist.item())
+    
     dist_self = wcd(source_verts, source_verts, weights_source=weights)
-    print("Chamfer distance (self):", dist_self.detach().cpu().item())
-    dist_self = wcd(target_verts, target_verts, weights_source=weights)
-    print("Chamfer distance (self):", dist_self.detach().cpu().item())
+    print("Weighted Chamfer distance (self):", dist_self.detach().cpu().item())
+    dist_self = wcd(target_verts, target_verts, weights_source=weights[0][:4])
+    print("Weighted Chamfer distance (self):", dist_self.detach().cpu().item())
 
     cd = ChamferDistance()
     dist_unweighted = 0.5 * cd(
         source_verts,
         target_verts,
-        bidirectional=True
+        bidirectional=True,
+        point_reduction="mean"
     )
     print("Unweighted Chamfer distance:", dist_unweighted.item())
     # As a sanity check, chamfer distance between a pointcloud and itself must be
