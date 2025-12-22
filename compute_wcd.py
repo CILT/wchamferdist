@@ -101,6 +101,7 @@ if __name__ == "__main__":
     import os
     import csv
     import torch
+    from ResourceTracker import ResourceTracker
 
     # ------------------------------------------------------------
     # Configuration
@@ -189,16 +190,20 @@ if __name__ == "__main__":
                 # ------------------------------
                 # Unweighted CD
                 # ------------------------------
+                tracker.start()
                 cd_val = 0.5 * cd(
                     source_verts,
                     target_verts,
                     bidirectional=True,
                     point_reduction="mean"
                 )
+                cd_stats = tracker.stop()
+                print(f"    Time taken: {cd_stats['wall_time_sec']:.2f}")
 
                 # ------------------------------
                 # Weighted CD
                 # ------------------------------
+                tracker.start()
                 wcd_val = 0.5 * wcd(
                     source_verts,
                     target_verts,
@@ -207,6 +212,8 @@ if __name__ == "__main__":
                     bidirectional=True,
                     point_reduction="mean"
                 )
+                wcd_stats = tracker.stop()
+                print(f"    Time taken: {wcd_stats['wall_time_sec']:.2f}")
 
                 # ------------------------------
                 # Write CSV row
