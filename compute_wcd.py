@@ -8,7 +8,8 @@ category_to_weight = {
     "corner": 2.0,
     "edge": 1.5,
     "flat_face": 0.5,
-    "sculpted_face": 3.0
+    "sculpted_face": 3.0,
+    "sculpted_flat": 0.5,
 }
 
 def load_mesh_and_weights(mesh_path, json_path=None, device="cpu"):
