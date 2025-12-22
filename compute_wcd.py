@@ -15,8 +15,19 @@ def load_mesh_and_weights(mesh_path, json_path=None, device="cpu"):
     # Load mesh
     # Only pointcloud matters for Chamfer distance
     # If json_path is None, no weights are loaded
-    mesh = meshio.read(mesh_path)
-    verts = torch.tensor(mesh.points, dtype=torch.float32, device=device)[None, :, :]  # Shape (1, P, 3)
+    if mesh_path.lower().endswith(".obj"):
+        verts_list = []
+        with open(mesh_path, "r") as f:
+            for line in f:
+                if line.startswith("v "):   # vertex position only
+                    _, x, y, z = line.strip().split()[:4]
+                    verts_list.append([float(x), float(y), float(z)])
+
+        verts = torch.tensor(verts_list, dtype=torch.float32, device=device)[None, :, :]
+    else:
+        # PLY and others are safe
+        mesh = meshio.read(mesh_path)
+        verts = torch.tensor(mesh.points, dtype=torch.float32, device=device)[None, :, :]  # Shape (1, P, 3)
 
     if json_path is None:
         return verts, None
@@ -35,14 +46,14 @@ def load_mesh_and_weights(mesh_path, json_path=None, device="cpu"):
 
 if __name__ == "__main__":
 
-    # root = "/home/cllullt/Desktop/blender-4.4.3-linux-x64_anakena"
-    root = "/home/cllullt/blender-4.4.3-linux-x64"
+    root = "/home/cllullt/blender-4.4.3-linux-x64_anakena"
+    # root = "/home/cllullt/blender-4.4.3-linux-x64"
     source_path = f"{root}/cube.ply"
     # source_path = f"/media/cllullt/Arxius/Meus_Documents/PhD/Investigacion/data/primitives/cube_2.obj"
     categories_path = f"{root}/cube.ply.json"
-    target_path = f"/media/cllull/Arxius/Meus_Documents/PhD/Investigacion/data/primitives/cube.obj"
-    target_path = f"/media/cllull/Arxius/Meus_Documents/PhD/Investigacion/data/primitives/cube_flat.ply"
-    target_path = f"/media/cllullt/Arxius/Meus_Documents/PhD/Investigacion/data/primitives/cube_simple.obj"
+    target_path = f"/media/cllullt/Arxius/Meus_Documents/PhD/Investigacion/data/primitives/cube.obj"
+    #target_path = f"/media/cllull/Arxius/Meus_Documents/PhD/Investigacion/data/primitives/cube_flat.ply"
+    #target_path = f"/media/cllullt/Arxius/Meus_Documents/PhD/Investigacion/data/primitives/cube_simple.obj"
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     
@@ -84,3 +95,7 @@ if __name__ == "__main__":
     print("Chamfer distance (self):", dist_self.detach().cpu().item())
     dist_self = cd(target_verts, target_verts)
     print("Chamfer distance (self):", dist_self.detach().cpu().item())
+
+
+
+
