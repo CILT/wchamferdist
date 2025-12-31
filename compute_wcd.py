@@ -1,15 +1,19 @@
 import json, meshio
 import torch
+import os
+import csv
+import torch
 from localchamferdist.wchamfer import WeightedChamferDistance
 from localchamferdist import ChamferDistance
+from ResourceTracker import ResourceTracker
 
 
 category_to_weight = {
-    "corner": 2.0,
-    "edge": 1.5,
-    "flat_face": 0.5,
+    "corner": 50.0,
+    "edge": 5.0,
+    "flat_face": 1.0,
     "sculpted_face": 3.0,
-    "sculpted_flat": 0.5,
+    "sculpted_flat": 1.0,
 }
 
 def load_mesh_and_weights(mesh_path, json_path=None, device="cpu"):
@@ -46,73 +50,17 @@ def load_mesh_and_weights(mesh_path, json_path=None, device="cpu"):
 
 
 if __name__ == "__main__":
-
-    # root = "/home/cllullt/blender-4.4.3-linux-x64_anakena"
-    # # root = "/home/cllullt/blender-4.4.3-linux-x64"
-    # source_path = f"{root}/cube.ply"
-    # # source_path = f"/media/cllullt/Arxius/Meus_Documents/PhD/Investigacion/data/primitives/cube_2.obj"
-    # categories_path = f"{root}/cube.ply.json"
-    # target_path = f"/media/cllullt/Arxius/Meus_Documents/PhD/Investigacion/data/primitives/cube.obj"
-    # #target_path = f"/media/cllull/Arxius/Meus_Documents/PhD/Investigacion/data/primitives/cube_flat.ply"
-    # #target_path = f"/media/cllullt/Arxius/Meus_Documents/PhD/Investigacion/data/primitives/cube_simple.obj"
-
-    # device = "cuda" if torch.cuda.is_available() else "cpu"
-    
-    # source_verts, weights = load_mesh_and_weights(source_path, categories_path, device=device)
-    # target_verts, _ = load_mesh_and_weights(target_path, None, device=device)
-
-    # print(f"Loaded source vertices shape: {source_verts.shape}")
-    # print(f"\t with weights shape: {weights.shape}")
-    # print(f"Loaded target vertices shape: {target_verts.shape}")
-
-    # wcd = WeightedChamferDistance()
-    # print("Computing weighted Chamfer distance...")
-    # dist = 0.5 * wcd(
-    #     source_verts,
-    #     target_verts,
-    #     weights_source=weights,
-    #     reverse=False,
-    #     bidirectional=True,
-    #     point_reduction="mean"
-    # )
-    # print("Weighted Chamfer distance:", dist.item())
-    
-    # dist_self = wcd(source_verts, source_verts, weights_source=weights)
-    # print("Weighted Chamfer distance (self):", dist_self.detach().cpu().item())
-    # dist_self = wcd(target_verts, target_verts, weights_source=weights[0][:4])
-    # print("Weighted Chamfer distance (self):", dist_self.detach().cpu().item())
-
-    # cd = ChamferDistance()
-    # dist_unweighted = 0.5 * cd(
-    #     source_verts,
-    #     target_verts,
-    #     bidirectional=True,
-    #     point_reduction="mean"
-    # )
-    # print("Unweighted Chamfer distance:", dist_unweighted.item())
-    # # As a sanity check, chamfer distance between a pointcloud and itself must be
-    # # zero.
-    # dist_self = cd(source_verts, source_verts)
-    # print("Chamfer distance (self):", dist_self.detach().cpu().item())
-    # dist_self = cd(target_verts, target_verts)
-    # print("Chamfer distance (self):", dist_self.detach().cpu().item())
-
-
-    import os
-    import csv
-    import torch
-    from ResourceTracker import ResourceTracker
-
     # ------------------------------------------------------------
     # Configuration
     # ------------------------------------------------------------
     ROOT_DIR = "/media/cllullt/Arxius/Meus_Documents/PhD/Investigacion/data/reconstructions/300x300_st_0_02"
-    OUTPUT_CSV = "evaluation_results.csv"
+    OUTPUT_CSV = "evaluation_results_w_vggt.csv"
 
     TARGETS = {
         "neuralangelo": "neuralangelo.ply",
         "neus": "neus.ply",
         "vggt": os.path.join("sparse", "vggt.ply"),
+        "vggt_corrected": os.path.join("sparse", "vggt_corrected.ply"),
     }
 
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
@@ -135,7 +83,9 @@ if __name__ == "__main__":
             "experiment_id",
             "method",
             "cd",
+            "cd_h",
             "wcd",
+            "wcd_h",
             "num_source_pts",
             "num_target_pts"
         ])
@@ -201,6 +151,28 @@ if __name__ == "__main__":
                 print(f"    Time taken: {cd_stats['wall_time_sec']:.2f}")
 
                 # ------------------------------
+                # Harmonic CD
+                # ------------------------------
+                tracker.start()
+                forward = cd(
+                    source_verts,
+                    target_verts,
+                    reverse=False,
+                    bidirectional=False,
+                    point_reduction="mean"
+                )
+                backward = cd(
+                    source_verts,
+                    target_verts,
+                    reverse=True,
+                    bidirectional=False,
+                    point_reduction="mean"
+                )
+                hcd = 2.0 * forward * backward / (forward + backward + 1e-8)
+                hcd_stats = tracker.stop()
+                print(f"    Time taken: {hcd_stats['wall_time_sec']:.2f}")
+
+                # ------------------------------
                 # Weighted CD
                 # ------------------------------
                 tracker.start()
@@ -216,17 +188,43 @@ if __name__ == "__main__":
                 print(f"    Time taken: {wcd_stats['wall_time_sec']:.2f}")
 
                 # ------------------------------
+                # Harmonic Weighted CD
+                # ------------------------------
+                tracker.start()
+                forward = wcd(
+                    source_verts,
+                    target_verts,
+                    weights_source=source_weights,
+                    reverse=False,
+                    bidirectional=False,
+                    point_reduction="mean"
+                )
+                backward = wcd(
+                    source_verts,
+                    target_verts,
+                    weights_source=source_weights,
+                    reverse=True,
+                    bidirectional=False,
+                    point_reduction="mean"
+                )
+                hwcd = 2.0 * forward * backward / (forward + backward + 1e-8)
+                hwcd_stats = tracker.stop()
+                print(f"    Time taken: {hwcd_stats['wall_time_sec']:.2f}")
+
+                # ------------------------------
                 # Write CSV row
                 # ------------------------------
                 writer.writerow([
                     exp_name,
                     method,
                     cd_val.item(),
+                    hcd.item(),
                     wcd_val.item(),
+                    hwcd.item(),
                     num_source_pts,
                     num_target_pts
                 ])
 
-                print(f"    CD = {cd_val.item():.6f}, WCD = {wcd_val.item():.6f}")
+                print(f"    CD  = {cd_val.item():.6f}, CD_h  = {hcd.item():.6f},\n    WCD = {wcd_val.item():.6f}, WCD_h = {hwcd.item():.6f}")
 
 
