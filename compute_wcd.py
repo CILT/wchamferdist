@@ -54,9 +54,9 @@ if __name__ == "__main__":
     # Configuration
     # ------------------------------------------------------------
     ROOT_DIR = "/media/cllullt/Arxius/Meus_Documents/PhD/Investigacion/data/reconstructions/300x300_st_0_02"
-    OUTPUT_CSV = "evaluation_results_w_vggt.csv"
+    OUTPUT_CSV = "evaluation_results_w_vggt_test.csv"
 
-    TARGETS = {
+    SOURCES = {
         "neuralangelo": "neuralangelo.ply",
         "neus": "neus.ply",
         "vggt": os.path.join("sparse", "vggt.ply"),
@@ -108,34 +108,35 @@ if __name__ == "__main__":
                 continue
 
             # ----------------------------------------------------
-            # Load GT once
+            # Load GT once (ground truth = Target points)
             # ----------------------------------------------------
-            source_verts, source_weights = load_mesh_and_weights(
+            target_verts, target_weights = load_mesh_and_weights(
                 gt_obj,
                 gt_json,
                 device=DEVICE
             )
 
-            num_source_pts = source_verts.shape[1]
+            num_target_pts = target_verts.shape[1]
 
             # ----------------------------------------------------
-            # Compare with each reconstruction
+            # Compare with each reconstruction (sources)
             # ----------------------------------------------------
-            for method, rel_path in TARGETS.items():
-                target_path = os.path.join(exp_dir, rel_path)
-                if not os.path.exists(target_path):
+            for method, rel_path in SOURCES.items():
+                source_path = os.path.join(exp_dir, rel_path)
+                if not os.path.exists(source_path):
                     print(f"  [{method}] missing → skipped")
                     continue
 
                 print(f"  [{method}] evaluating...")
 
-                target_verts, _ = load_mesh_and_weights(
-                    target_path,
+                # Reconstructions are the Source points
+                source_verts, _ = load_mesh_and_weights(
+                    source_path,
                     None,
                     device=DEVICE
                 )
 
-                num_target_pts = target_verts.shape[1]
+                num_source_pts = source_verts.shape[1]
 
                 # ------------------------------
                 # Unweighted CD
@@ -154,17 +155,19 @@ if __name__ == "__main__":
                 # Harmonic CD
                 # ------------------------------
                 tracker.start()
+                # Using (target, source) ordering; `reverse` controls
+                # the direction: `reverse=True` computes source->target
                 forward = cd(
-                    source_verts,
                     target_verts,
-                    reverse=False,
+                    source_verts,
+                    reverse=True,
                     bidirectional=False,
                     point_reduction="mean"
                 )
                 backward = cd(
-                    source_verts,
                     target_verts,
-                    reverse=True,
+                    source_verts,
+                    reverse=False,
                     bidirectional=False,
                     point_reduction="mean"
                 )
@@ -176,11 +179,13 @@ if __name__ == "__main__":
                 # Weighted CD
                 # ------------------------------
                 tracker.start()
+                # For weighted CD, weights belong to the ground-truth (Target)
+                # so pass them as weights_target to match the target argument.
                 wcd_val = 0.5 * wcd(
-                    source_verts,
                     target_verts,
-                    weights_source=source_weights,
-                    reverse=False,
+                    source_verts,
+                    weights_source=target_weights,
+                    reverse=True,
                     bidirectional=True,
                     point_reduction="mean"
                 )
@@ -191,19 +196,20 @@ if __name__ == "__main__":
                 # Harmonic Weighted CD
                 # ------------------------------
                 tracker.start()
+                # `reverse=True` for forward (source->target)
                 forward = wcd(
-                    source_verts,
                     target_verts,
-                    weights_source=source_weights,
-                    reverse=False,
+                    source_verts,
+                    weights_source=target_weights,
+                    reverse=True,
                     bidirectional=False,
                     point_reduction="mean"
                 )
                 backward = wcd(
-                    source_verts,
                     target_verts,
-                    weights_source=source_weights,
-                    reverse=True,
+                    source_verts,
+                    weights_source=target_weights,
+                    reverse=False,
                     bidirectional=False,
                     point_reduction="mean"
                 )
