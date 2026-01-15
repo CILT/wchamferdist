@@ -9,10 +9,10 @@ from ResourceTracker import ResourceTracker
 
 
 category_to_weight = {
-    "corner": 50.0,
-    "edge": 5.0,
+    "corner": 100.0,
+    "edge": 50.0,
     "flat_face": 1.0,
-    "sculpted_face": 3.0,
+    "sculpted_face": 300.0,
     "sculpted_flat": 1.0,
 }
 
@@ -54,9 +54,10 @@ if __name__ == "__main__":
     # Configuration
     # ------------------------------------------------------------
     ROOT_DIR = "/media/cllullt/Arxius/Meus_Documents/PhD/Investigacion/data/reconstructions/300x300_st_0_02"
-    OUTPUT_CSV = "evaluation_results_w_vggt_test.csv"
+    OUTPUT_CSV = "evaluation_results_vggt_colmap.csv"
 
     SOURCES = {
+        "colmap": "colmap.ply",
         "neuralangelo": "neuralangelo.ply",
         "neus": "neus.ply",
         "vggt": os.path.join("sparse", "vggt.ply"),
