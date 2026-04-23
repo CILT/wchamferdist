@@ -55,7 +55,7 @@ if __name__ == "__main__":
     # ------------------------------------------------------------
     # ROOT_DIR = "/media/cllullt/Arxius/Meus_Documents/PhD/Investigacion/data/reconstructions/300x300_st_0_02"
     ROOT_DIR = "/media/cllullt/Arxius/Meus_Documents/PhD/Congresos_etc/2026_SHREC/Reconstructions/gathered_objects"
-    OUTPUT_CSV = "evaluation_results_SHREC.csv"
+    OUTPUT_CSV = "evaluation_results_SHREC_2.csv"
 
     SOURCES = {
         "colmap": "colmap.ply",
@@ -93,9 +93,13 @@ if __name__ == "__main__":
             "experiment_id",
             "method",
             "cd",
+            "true_cd",
             "cd_h",
+            "cd_h_2",
             "wcd",
+            "true_wcd",
             "wcd_h",
+            "wcd_h_2",
             "num_source_pts",
             "num_target_pts"
         ])
@@ -148,25 +152,8 @@ if __name__ == "__main__":
 
                 num_source_pts = source_verts.shape[1]
 
-                # ------------------------------
-                # Unweighted CD
-                # ------------------------------
+                # Forward time:
                 tracker.start()
-                cd_val = 0.5 * cd(
-                    source_verts,
-                    target_verts,
-                    bidirectional=True,
-                    point_reduction="mean"
-                )
-                cd_stats = tracker.stop()
-                print(f"    Time taken: {cd_stats['wall_time_sec']:.2f}")
-
-                # ------------------------------
-                # Harmonic CD
-                # ------------------------------
-                tracker.start()
-                # Using (target, source) ordering; `reverse` controls
-                # the direction: `reverse=True` computes source->target
                 forward = cd(
                     target_verts,
                     source_verts,
@@ -181,33 +168,11 @@ if __name__ == "__main__":
                     bidirectional=False,
                     point_reduction="mean"
                 )
-                hcd = 2.0 * forward * backward / (forward + backward + 1e-8)
-                hcd_stats = tracker.stop()
-                print(f"    Time taken: {hcd_stats['wall_time_sec']:.2f}")
+                cd_stats = tracker.stop()
+                print(f"    Time taken cd: {cd_stats['wall_time_sec']:.2f}")
 
-                # ------------------------------
-                # Weighted CD
-                # ------------------------------
                 tracker.start()
-                # For weighted CD, weights belong to the ground-truth (Target)
-                # so pass them as weights_target to match the target argument.
-                wcd_val = 0.5 * wcd(
-                    target_verts,
-                    source_verts,
-                    weights_source=target_weights,
-                    reverse=True,
-                    bidirectional=True,
-                    point_reduction="mean"
-                )
-                wcd_stats = tracker.stop()
-                print(f"    Time taken: {wcd_stats['wall_time_sec']:.2f}")
-
-                # ------------------------------
-                # Harmonic Weighted CD
-                # ------------------------------
-                tracker.start()
-                # `reverse=True` for forward (source->target)
-                forward = wcd(
+                w_forward = wcd(
                     target_verts,
                     source_verts,
                     weights_source=target_weights,
@@ -215,7 +180,7 @@ if __name__ == "__main__":
                     bidirectional=False,
                     point_reduction="mean"
                 )
-                backward = wcd(
+                w_backward = wcd(
                     target_verts,
                     source_verts,
                     weights_source=target_weights,
@@ -223,9 +188,72 @@ if __name__ == "__main__":
                     bidirectional=False,
                     point_reduction="mean"
                 )
+                wcd_stats = tracker.stop()
+                print(f"    Time taken wcd: {wcd_stats['wall_time_sec']:.2f}")
+
+                # ------------------------------
+                # Unweighted CD
+                # ------------------------------
+                tracker.start()
+                # cd_val = 0.5 * cd(
+                #     source_verts,
+                #     target_verts,
+                #     bidirectional=True,
+                #     point_reduction="mean"
+                # )
+                cd_val = 0.5 * (forward + backward)
+                cd_stats = tracker.stop()
+                print(f"    Time taken: {cd_stats['wall_time_sec']:.2f}")
+
+                # ------------------------------
+                # Harmonic CD
+                # ------------------------------
+                tracker.start()
+                # Using (target, source) ordering; `reverse` controls
+                # the direction: `reverse=True` computes source->target
+                hcd = 2.0 * forward * backward / (forward + backward + 1e-8)
+                hcd_stats = tracker.stop()
+                print(f"    Time taken: {hcd_stats['wall_time_sec']:.2f}")
+
+                true_hcd = 2.0 / (1.0/(forward + 1e-8) + 1.0/(backward + 1e-8))
+                print(f"true_hcd check: {hcd.item():.6f} vs {true_hcd.item():.6f}")
+
+                hcd_2 = 2.0 * (1 + forward) * (1 + backward) / ((1 + forward) + (1 + backward)) - 1.0
+                print(f"hcd_2 check: {hcd.item():.6f} vs {hcd_2.item():.6f}")
+                
+                # ------------------------------
+                # Weighted CD
+                # ------------------------------
+                tracker.start()
+                # For weighted CD, weights belong to the ground-truth (Target)
+                # so pass them as weights_target to match the target argument.
+                # wcd_val = 0.5 * wcd(
+                #     target_verts,
+                #     source_verts,
+                #     weights_source=target_weights,
+                #     reverse=True,
+                #     bidirectional=True,
+                #     point_reduction="mean"
+                # )
+                wcd_stats = tracker.stop()
+                print(f"    Time taken: {wcd_stats['wall_time_sec']:.2f}")
+
+                wcd_val = 0.5 * (w_forward + w_backward)
+                # ------------------------------
+                # Harmonic Weighted CD
+                # ------------------------------
+                tracker.start()
+                # `reverse=True` for forward (source->target)
+
                 hwcd = 2.0 * forward * backward / (forward + backward + 1e-8)
                 hwcd_stats = tracker.stop()
                 print(f"    Time taken: {hwcd_stats['wall_time_sec']:.2f}")
+
+                true_hwcd = 2.0 / (1.0/(w_forward + 1e-8) + 1.0/(w_backward + 1e-8))
+                print(f"true_hwcd check: {hwcd.item():.6f} vs {true_hwcd.item():.6f}")
+
+                hwcd_2 = 2.0 * (1 + w_forward) * (1 + w_backward) / ((1 + w_forward) + (1 + w_backward)) - 1.0
+                print(f"hwcd_2 check: {hwcd.item():.6f} vs {hwcd_2.item():.6f}")
 
                 # ------------------------------
                 # Write CSV row
@@ -234,9 +262,14 @@ if __name__ == "__main__":
                     exp_name,
                     method,
                     cd_val.item(),
+                    true_hcd.item(),
                     hcd.item(),
+                    hcd_2.item(),
+
                     wcd_val.item(),
+                    true_hwcd.item(),
                     hwcd.item(),
+                    hwcd_2.item(),
                     num_source_pts,
                     num_target_pts
                 ])
