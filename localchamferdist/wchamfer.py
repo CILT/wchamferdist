@@ -125,9 +125,9 @@ class WeightedChamferDistance(torch.nn.Module):
                 chamfer_backward = chamfer_backward * gather_weights_from_indices(weights_source, target_nn.idx[..., 0])
 
         # Reduce
-        if reverse or bidirectional:
-            # Backward Chamfer distance (batchsize_source, lengths_source)
-            chamfer_backward = target_nn.dists[..., 0]
+        # if reverse or bidirectional:
+        #     # Backward Chamfer distance (batchsize_source, lengths_source)
+        #     chamfer_backward = target_nn.dists[..., 0]
 
         if point_reduction == "sum":
             chamfer_forward = chamfer_forward.sum(1)  # (batchsize_source,)
