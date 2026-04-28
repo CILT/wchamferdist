@@ -55,7 +55,7 @@ if __name__ == "__main__":
     # ------------------------------------------------------------
     # ROOT_DIR = "/media/cllullt/Arxius/Meus_Documents/PhD/Investigacion/data/reconstructions/300x300_st_0_02"
     ROOT_DIR = "/media/cllull/Arxius/Meus_Documents/PhD/Congresos_etc/2026_SHREC/Reconstructions/gathered_objects"
-    OUTPUT_CSV = "evaluation_results_SHREC_2.csv"
+    OUTPUT_CSV = "evaluation_results_SHREC_3.csv"
 
     SOURCES = {
         "colmap": "colmap.ply",
