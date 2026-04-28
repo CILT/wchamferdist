@@ -54,7 +54,7 @@ if __name__ == "__main__":
     # Configuration
     # ------------------------------------------------------------
     # ROOT_DIR = "/media/cllullt/Arxius/Meus_Documents/PhD/Investigacion/data/reconstructions/300x300_st_0_02"
-    ROOT_DIR = "/media/cllullt/Arxius/Meus_Documents/PhD/Congresos_etc/2026_SHREC/Reconstructions/gathered_objects"
+    ROOT_DIR = "/media/cllull/Arxius/Meus_Documents/PhD/Congresos_etc/2026_SHREC/Reconstructions/gathered_objects"
     OUTPUT_CSV = "evaluation_results_SHREC_2.csv"
 
     SOURCES = {
@@ -68,9 +68,9 @@ if __name__ == "__main__":
         "colmap": "colmap.ply",
         "neus": "NeuS_00140000.ply",
         "sam_sugar": "SAMplify_SuGaR.obj",
-        "nerf_isntantngp": "NeRF_InstantNGP.ply",
-        "vggt_100000": "VGGT_sparse_100000_points.ply",
-        "vggt": "VGGT_sparse_points.ply",
+        "nerf_instantngp": "NeRF_InstantNGP.ply",
+        "vggt_100000": "vggt_sparse_100000_aligned.ply",
+        "vggt": "vggt_sparse_aligned.ply",
     }
 
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
@@ -93,13 +93,13 @@ if __name__ == "__main__":
             "experiment_id",
             "method",
             "cd",
-            "true_cd",
-            "cd_h",
-            "cd_h_2",
+            "true_hcd",
+            "hcd",
+            "hcd_2",
             "wcd",
-            "true_wcd",
-            "wcd_h",
-            "wcd_h_2",
+            "true_hwcd",
+            "hwcd",
+            "hwcd_2",
             "num_source_pts",
             "num_target_pts"
         ])
