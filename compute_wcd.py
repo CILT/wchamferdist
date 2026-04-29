@@ -93,11 +93,9 @@ if __name__ == "__main__":
             "experiment_id",
             "method",
             "cd",
-            "true_hcd",
             "hcd",
             "hcd_2",
             "wcd",
-            "true_hwcd",
             "hwcd",
             "hwcd_2",
             "num_source_pts",
@@ -215,9 +213,6 @@ if __name__ == "__main__":
                 hcd_stats = tracker.stop()
                 print(f"    Time taken: {hcd_stats['wall_time_sec']:.2f}")
 
-                true_hcd = 2.0 / (1.0/(forward + 1e-8) + 1.0/(backward + 1e-8))
-                print(f"true_hcd check: {hcd.item():.6f} vs {true_hcd.item():.6f}")
-
                 hcd_2 = 2.0 * (1 + forward) * (1 + backward) / ((1 + forward) + (1 + backward)) - 1.0
                 print(f"hcd_2 check: {hcd.item():.6f} vs {hcd_2.item():.6f}")
                 
@@ -249,9 +244,6 @@ if __name__ == "__main__":
                 hwcd_stats = tracker.stop()
                 print(f"    Time taken: {hwcd_stats['wall_time_sec']:.2f}")
 
-                true_hwcd = 2.0 / (1.0/(w_forward + 1e-8) + 1.0/(w_backward + 1e-8))
-                print(f"true_hwcd check: {hwcd.item():.6f} vs {true_hwcd.item():.6f}")
-
                 hwcd_2 = 2.0 * (1 + w_forward) * (1 + w_backward) / ((1 + w_forward) + (1 + w_backward)) - 1.0
                 print(f"hwcd_2 check: {hwcd.item():.6f} vs {hwcd_2.item():.6f}")
 
@@ -262,12 +254,10 @@ if __name__ == "__main__":
                     exp_name,
                     method,
                     cd_val.item(),
-                    true_hcd.item(),
                     hcd.item(),
                     hcd_2.item(),
 
                     wcd_val.item(),
-                    true_hwcd.item(),
                     hwcd.item(),
                     hwcd_2.item(),
                     num_source_pts,
