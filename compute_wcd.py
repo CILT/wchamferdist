@@ -54,23 +54,18 @@ if __name__ == "__main__":
     # Configuration
     # ------------------------------------------------------------
     # ROOT_DIR = "/media/cllullt/Arxius/Meus_Documents/PhD/Investigacion/data/reconstructions/300x300_st_0_02"
-    ROOT_DIR = "/media/cllull/Arxius/Meus_Documents/PhD/Congresos_etc/2026_SHREC/Reconstructions/gathered_objects"
-    OUTPUT_CSV = "evaluation_results_SHREC_3.csv"
+    ROOT_DIR = "/media/cllullt/Arxius/Meus_Documents/PhD/Congresos_etc/2026_SHREC/Reconstructions/gathered_objects"
+    OUTPUT_CSV = "evaluation_results_SHREC_4.csv"
 
-    SOURCES = {
-        "colmap": "colmap.ply",
-        "neuralangelo": "neuralangelo.ply",
-        "neus": "neus.ply",
-        "vggt": os.path.join("sparse", "vggt.ply"),
-        "vggt_corrected": os.path.join("sparse", "vggt_corrected.ply"),
-    }
     SOURCES = {
         "colmap": "colmap.ply",
         "neus": "NeuS_00140000.ply",
         "sam_sugar": "SAMplify_SuGaR.obj",
         "nerf_instantngp": "NeRF_InstantNGP.ply",
-        "vggt_100000": "vggt_sparse_100000_aligned.ply",
+        "vggt_frame": "vggt_frame.ply",
+        "vggt_100k": "vggt_sparse_100000_aligned.ply",
         "vggt": "vggt_sparse_aligned.ply",
+        "vggt_high_def": "vggt_sparse_res1920_1000000_aligned.ply",
     }
 
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
@@ -240,7 +235,7 @@ if __name__ == "__main__":
                 tracker.start()
                 # `reverse=True` for forward (source->target)
 
-                hwcd = 2.0 * forward * backward / (forward + backward + 1e-8)
+                hwcd = 2.0 * w_forward * w_backward / (w_forward + w_backward + 1e-8)
                 hwcd_stats = tracker.stop()
                 print(f"    Time taken: {hwcd_stats['wall_time_sec']:.2f}")
 
